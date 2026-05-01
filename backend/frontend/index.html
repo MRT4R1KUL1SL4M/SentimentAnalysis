@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
+
+    <div class="container mx-auto max-w-2xl w-full p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
+
+        <h1 class="text-4xl font-bold text-center mb-2 text-cyan-400">
+            Sentiment Analysis Engine
+        </h1>
+        <p id="modelName" class="text-center text-gray-400 mb-8 h-6">
+            (Loading model...)
+        </p>
+
+        <div id="errorDiv" class="hidden p-3 mb-4 bg-red-800 border border-red-600 text-red-100 rounded-lg">
+            <span id="errorMessage"></span>
+        </div>
+
+        <div class="mb-6 relative">
+            <label for="textInput" class="block text-lg font-medium text-gray-300 mb-2">
+                Enter your text:
+            </label>
+            <textarea id="textInput" rows="5"
+                class="w-full p-4 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:ring-2 focus:ring-cyan-500 focus:outline-none transition duration-200"
+                placeholder="Type something... (e.g., 'I love this product!')"></textarea>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="analyzeButton"
+                class="w-full bg-cyan-600 hover:bg-cyan-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center">
+                <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="buttonText">Analyze Sentiment</span>
+            </button>
+            <button id="clearButton"
+                class="w-full sm:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                Clear
+            </button>
+        </div>
+
+        <div id="result" class="mt-8 p-6 bg-gray-700 rounded-lg hidden border border-gray-600">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-200">Analysis Result:</h2>
+            <div id="sentiment" class="text-4xl font-extrabold text-center flex items-center justify-center gap-4">
+                <span id="sentimentIcon"></span>
+                <span id="sentimentText"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Select all DOM elements
+        const textInput = document.getElementById('textInput');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const clearButton = document.getElementById('clearButton');
+        const resultDiv = document.getElementById('result');
+        const sentimentText = document.getElementById('sentimentText');
+        const sentimentIcon = document.getElementById('sentimentIcon');
+        const modelNameEl = document.getElementById('modelName');
+        const errorDiv = document.getElementById('errorDiv');
+        const errorMessage = document.getElementById('errorMessage');
+        const spinner = document.getElementById('spinner');
+        const buttonText = document.getElementById('buttonText');
+
+        // API endpoints
+        const predictApi = '/predict';
+        const statusApi = '/status';
+
+        // Icon SVGs
+        const icons = {
+            positive: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`,
+            negative: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`,
+            neutral: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 10a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd" /></svg>`,
+            other: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>`
+        };
+
+        // Fetch model status on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(statusApi);
+                if (!response.ok) throw new Error('Status check failed');
+                const data = await response.json();
+                modelNameEl.textContent = `(Active Model: ${data.model_name || 'N/A'})`;
+            } catch (error) {
+                modelNameEl.textContent = '(Could not load model status)';
+                console.error('Error fetching status:', error);
+            }
+        });
+
+        // Analyze button click event
+        analyzeButton.addEventListener('click', async () => {
+            const text = textInput.value;
+            if (!text) {
+                showError('Please enter some text to analyze.');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(predictApi, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+
+                if (data.predicted_sentiment) {
+                    displayResult(data.predicted_sentiment);
+                } else if (data.error) {
+                    showError('Error from server: ' + data.error);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Could not connect to the analysis server. Is it running?');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Clear button click event
+        clearButton.addEventListener('click', () => {
+            textInput.value = '';
+            resultDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+        });
+
+        // Function to manage loading state
+        function setLoading(isLoading) {
+            analyzeButton.disabled = isLoading;
+            if (isLoading) {
+                spinner.classList.remove('hidden');
+                buttonText.textContent = 'Analyzing...';
+            } else {
+                spinner.classList.add('hidden');
+                buttonText.textContent = 'Analyze Sentiment';
+            }
+        }
+
+        // Function to show error messages
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
+        }
+
+        // Function to display results
+        function displayResult(sentiment) {
+            sentimentText.textContent = sentiment;
+            const sentimentKey = sentiment.toLowerCase();
+            let iconSvg = icons.other; // Default
+            let colorClass = 'text-blue-400';
+
+            if (sentimentKey.includes('positive')) {
+                iconSvg = icons.positive;
+                colorClass = 'text-green-400';
+            } else if (sentimentKey.includes('negative')) {
+                iconSvg = icons.negative;
+                colorClass = 'text-red-400';
+            } else if (sentimentKey.includes('neutral')) {
+                iconSvg = icons.neutral;
+                colorClass = 'text-yellow-400';
+            }
+            
+            sentimentIcon.innerHTML = iconSvg;
+            sentimentText.className = colorClass; // Only set color class
+            
+            resultDiv.classList.remove('hidden');
+            errorDiv.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
