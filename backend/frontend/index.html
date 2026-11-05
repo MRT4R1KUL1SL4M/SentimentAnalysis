@@ -1,184 +1,596 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentiment Analysis</title>
+    <title>SentiQuant | Sentiment & Uncertainty Quantification</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #06090f; }
+        ::-webkit-scrollbar-thumb { background: #1a2233; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #26334d; }
+        
+        body {
+            background-color: #06090f;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.05) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.04) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .dot-matrix {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .glass-card {
+            background: rgba(11, 15, 25, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.11);
+        }
+
+        .bar-transition {
+            transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
+<body class="text-slate-100 font-sans antialiased min-h-screen selection:bg-emerald-500 selection:text-slate-950 flex flex-col justify-between dot-matrix">
 
-    <div class="container mx-auto max-w-2xl w-full p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
-
-        <h1 class="text-4xl font-bold text-center mb-2 text-cyan-400">
-            Sentiment Analysis Engine
-        </h1>
-        <p id="modelName" class="text-center text-gray-400 mb-8 h-6">
-            (Loading model...)
-        </p>
-
-        <div id="errorDiv" class="hidden p-3 mb-4 bg-red-800 border border-red-600 text-red-100 rounded-lg">
-            <span id="errorMessage"></span>
-        </div>
-
-        <div class="mb-6 relative">
-            <label for="textInput" class="block text-lg font-medium text-gray-300 mb-2">
-                Enter your text:
-            </label>
-            <textarea id="textInput" rows="5"
-                class="w-full p-4 bg-gray-700 border border-gray-600 rounded-lg text-white text-base focus:ring-2 focus:ring-cyan-500 focus:outline-none transition duration-200"
-                placeholder="Type something... (e.g., 'I love this product!')"></textarea>
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-4">
-            <button id="analyzeButton"
-                class="w-full bg-cyan-600 hover:bg-cyan-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center">
-                <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span id="buttonText">Analyze Sentiment</span>
-            </button>
-            <button id="clearButton"
-                class="w-full sm:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                Clear
-            </button>
-        </div>
-
-        <div id="result" class="mt-8 p-6 bg-gray-700 rounded-lg hidden border border-gray-600">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-200">Analysis Result:</h2>
-            <div id="sentiment" class="text-4xl font-extrabold text-center flex items-center justify-center gap-4">
-                <span id="sentimentIcon"></span>
-                <span id="sentimentText"></span>
+    <!-- Minimalist Navigation Header -->
+    <header class="border-b border-slate-800/80 glass-card sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+            <!-- Brand -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-sm">
+                    <!-- Scientific Pulse / Waveform SVG -->
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 12h4l3 8 4-16 3 8h4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-base font-extrabold tracking-tight text-white flex items-center">
+                        Senti<span class="text-emerald-400">Quant</span>
+                    </span>
+                </div>
             </div>
         </div>
-    </div>
+    </header>
 
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto px-4 py-6 w-full space-y-4">
+
+        <!-- Input Section -->
+        <div class="glass-card p-4 rounded-xl space-y-3">
+            
+            <!-- Input Header & Presets -->
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Input Text
+                </span>
+                
+                <!-- Quick Preset Pills -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[10px] text-slate-500 font-mono">Presets:</span>
+                    <button onclick="setSample('positive')" class="px-2 py-0.5 text-[11px] rounded-md bg-slate-900 hover:bg-slate-800/90 text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Positive
+                    </button>
+                    <button onclick="setSample('negative')" class="px-2 py-0.5 text-[11px] rounded-md bg-slate-900 hover:bg-slate-800/90 text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Negative
+                    </button>
+                    <button onclick="setSample('neutral')" class="px-2 py-0.5 text-[11px] rounded-md bg-slate-900 hover:bg-slate-800/90 text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Neutral
+                    </button>
+                    <button onclick="setSample('irrelevant')" class="px-2 py-0.5 text-[11px] rounded-md bg-slate-900 hover:bg-slate-800/90 text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Irrelevant
+                    </button>
+                </div>
+            </div>
+
+            <!-- Textarea -->
+            <div>
+                <textarea id="textInput" rows="3"
+                    class="w-full p-3 bg-[#080c14]/90 border border-slate-800/90 rounded-lg text-slate-100 placeholder-slate-500 text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:outline-none transition resize-y font-sans"
+                    placeholder="Enter text to analyze sentiment & quantify predictive uncertainty..."></textarea>
+            </div>
+
+            <!-- Action Row -->
+            <div class="flex items-center justify-between pt-0.5 flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <button id="analyzeBtn" onclick="runInference()"
+                        class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs tracking-wide flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span id="btnText">Analyze Sentiment</span>
+                    </button>
+                    
+                    <button onclick="clearAll()"
+                        class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-medium text-xs border border-slate-800 transition">
+                        Clear
+                    </button>
+                </div>
+
+                <div class="text-[11px] font-mono text-slate-500 flex items-center gap-2.5">
+                    <span id="charCount">0 chars</span>
+                    <span id="latencySpan" class="hidden text-emerald-400 font-semibold font-mono">0ms</span>
+                </div>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="errorAlert" class="hidden p-3 rounded-lg bg-rose-950/80 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2">
+                <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="errorMessage">Error</span>
+            </div>
+
+        </div>
+
+        <!-- Results Section (3 Compact Cards) -->
+        <div id="resultsWrapper" class="hidden space-y-3 transition-all duration-300">
+
+            <!-- TIER 1: Final Model Verdict & Predictive Uncertainty (2 Compact Columns) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                <!-- 1. FINAL MODEL VERDICT -->
+                <div id="verdictCard" class="glass-card p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between shadow-lg relative overflow-hidden transition-all duration-300">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Final Model Verdict
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500">Soft Voting</span>
+                        </div>
+
+                        <!-- Verdict Hero -->
+                        <div class="flex items-center gap-3 my-2.5">
+                            <div id="verdictIconBox" class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-inner">
+                                <!-- Dynamic Verdict Icon -->
+                            </div>
+                            <div>
+                                <div id="verdictLabel" class="text-xl font-extrabold tracking-tight">--</div>
+                                <div class="text-[11px] text-slate-400 font-mono">
+                                    Confidence: <span id="verdictConfidence" class="font-bold text-white">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4-Class Probabilities -->
+                    <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="w-16 text-slate-400 font-mono text-[10px]">Positive</span>
+                            <div class="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800/90">
+                                <div id="barPositive" class="h-full bg-emerald-500 bar-transition rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="pPositive" class="w-10 text-right font-mono text-[10px] text-slate-300">0%</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="w-16 text-slate-400 font-mono text-[10px]">Negative</span>
+                            <div class="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800/90">
+                                <div id="barNegative" class="h-full bg-rose-500 bar-transition rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="pNegative" class="w-10 text-right font-mono text-[10px] text-slate-300">0%</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="w-16 text-slate-400 font-mono text-[10px]">Neutral</span>
+                            <div class="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800/90">
+                                <div id="barNeutral" class="h-full bg-amber-500 bar-transition rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="pNeutral" class="w-10 text-right font-mono text-[10px] text-slate-300">0%</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="w-16 text-slate-400 font-mono text-[10px]">Irrelevant</span>
+                            <div class="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800/90">
+                                <div id="barIrrelevant" class="h-full bg-sky-500 bar-transition rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="pIrrelevant" class="w-10 text-right font-mono text-[10px] text-slate-300">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. PREDICTIVE UNCERTAINTY -->
+                <div id="uncertaintyCard" class="glass-card p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between shadow-lg relative overflow-hidden transition-all duration-300">
+                    <div>
+                        <!-- Header -->
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                Predictive Uncertainty
+                            </span>
+                            <span id="uncertaintyBadge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border">
+                                Low Uncertainty
+                            </span>
+                        </div>
+
+                        <!-- Score Meter -->
+                        <div class="my-2.5">
+                            <div class="flex items-baseline justify-between mb-1">
+                                <span class="text-[11px] text-slate-400 font-mono">Dispersion Metric:</span>
+                                <div class="flex items-baseline gap-1">
+                                    <span id="uncertaintyScoreVal" class="text-xl font-extrabold font-mono text-white">0.0%</span>
+                                </div>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800/90 relative">
+                                <div id="uncertaintyProgressBar" class="h-full bar-transition rounded-full bg-emerald-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-1">
+                                <span>Certain (0%)</span>
+                                <span>Moderate</span>
+                                <span>Ambiguous (100%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry Metrics -->
+                    <div class="space-y-1 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
+                        <div class="flex items-center justify-between px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800/90">
+                            <span class="text-slate-500 text-[10px] uppercase">Consensus</span>
+                            <span id="consensusStatus" class="text-slate-200 font-semibold text-[11px] truncate ml-1">Full Consensus (3/3)</span>
+                        </div>
+                        <div class="flex items-center justify-between px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800/90">
+                            <span class="text-slate-500 text-[10px] uppercase">Shannon Entropy</span>
+                            <span id="entropyVal" class="text-slate-200 font-semibold text-[11px]">0.000 bits</span>
+                        </div>
+                        <div class="flex items-center justify-between px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800/90">
+                            <span class="text-slate-500 text-[10px] uppercase">Assessment</span>
+                            <span id="interpretationText" class="text-emerald-400 font-semibold text-[10px] truncate max-w-[180px]">Peaked density</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TIER 2: 3. SUB-MODEL PREDICTIONS (Compact Strip) -->
+            <div class="glass-card p-3 rounded-xl border border-slate-800 shadow-md">
+                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800/80">
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        Sub-Model Predictions
+                    </span>
+                    <span class="text-[10px] font-mono text-slate-500">3 Parallel Estimators</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    
+                    <!-- KNN -->
+                    <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 transition space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">KNN</span>
+                            <span id="knnPred" class="text-xs font-bold">--</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                            <span>Confidence</span>
+                            <span id="knnConf" class="font-semibold text-slate-300">--%</span>
+                        </div>
+                        <div class="h-1 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
+                            <div id="knnBar" class="h-full bg-emerald-500 bar-transition rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Random Forest -->
+                    <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 transition space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">Random Forest</span>
+                            <span id="rfPred" class="text-xs font-bold">--</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                            <span>Confidence</span>
+                            <span id="rfConf" class="font-semibold text-slate-300">--%</span>
+                        </div>
+                        <div class="h-1 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
+                            <div id="rfBar" class="h-full bg-emerald-500 bar-transition rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Extra Trees -->
+                    <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 transition space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-200">Extra Trees</span>
+                            <span id="etPred" class="text-xs font-bold">--</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                            <span>Confidence</span>
+                            <span id="etConf" class="font-semibold text-slate-300">--%</span>
+                        </div>
+                        <div class="h-1 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
+                            <div id="etBar" class="h-full bg-emerald-500 bar-transition rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Clean Minimalist Footer -->
+    <footer class="py-4 text-center text-[10px] text-slate-600 font-mono tracking-widest uppercase">
+        SentiQuant &bull; Sentiment &amp; Uncertainty Quantification
+    </footer>
+
+    <!-- Frontend Script Logic -->
     <script>
-        // Select all DOM elements
         const textInput = document.getElementById('textInput');
-        const analyzeButton = document.getElementById('analyzeButton');
-        const clearButton = document.getElementById('clearButton');
-        const resultDiv = document.getElementById('result');
-        const sentimentText = document.getElementById('sentimentText');
-        const sentimentIcon = document.getElementById('sentimentIcon');
-        const modelNameEl = document.getElementById('modelName');
-        const errorDiv = document.getElementById('errorDiv');
+        const charCount = document.getElementById('charCount');
+        const latencySpan = document.getElementById('latencySpan');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const resultsWrapper = document.getElementById('resultsWrapper');
+        const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
-        const spinner = document.getElementById('spinner');
-        const buttonText = document.getElementById('buttonText');
 
-        // API endpoints
-        const predictApi = '/predict';
-        const statusApi = '/status';
+        // Final Verdict
+        const verdictLabel = document.getElementById('verdictLabel');
+        const verdictConfidence = document.getElementById('verdictConfidence');
+        const verdictIconBox = document.getElementById('verdictIconBox');
 
-        // Icon SVGs
-        const icons = {
-            positive: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`,
-            negative: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`,
-            neutral: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 10a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd" /></svg>`,
-            other: `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>`
-        };
+        // Probabilities
+        const pPositive = document.getElementById('pPositive');
+        const pNegative = document.getElementById('pNegative');
+        const pNeutral = document.getElementById('pNeutral');
+        const pIrrelevant = document.getElementById('pIrrelevant');
+        const barPositive = document.getElementById('barPositive');
+        const barNegative = document.getElementById('barNegative');
+        const barNeutral = document.getElementById('barNeutral');
+        const barIrrelevant = document.getElementById('barIrrelevant');
 
-        // Fetch model status on page load
-        window.addEventListener('load', async () => {
-            try {
-                const response = await fetch(statusApi);
-                if (!response.ok) throw new Error('Status check failed');
-                const data = await response.json();
-                modelNameEl.textContent = `(Active Model: ${data.model_name || 'N/A'})`;
-            } catch (error) {
-                modelNameEl.textContent = '(Could not load model status)';
-                console.error('Error fetching status:', error);
-            }
+        // Uncertainty
+        const uncertaintyBadge = document.getElementById('uncertaintyBadge');
+        const uncertaintyScoreVal = document.getElementById('uncertaintyScoreVal');
+        const uncertaintyProgressBar = document.getElementById('uncertaintyProgressBar');
+        const consensusStatus = document.getElementById('consensusStatus');
+        const entropyVal = document.getElementById('entropyVal');
+        const interpretationText = document.getElementById('interpretationText');
+
+        // Sub-models
+        const knnPred = document.getElementById('knnPred');
+        const knnConf = document.getElementById('knnConf');
+        const knnBar = document.getElementById('knnBar');
+
+        const rfPred = document.getElementById('rfPred');
+        const rfConf = document.getElementById('rfConf');
+        const rfBar = document.getElementById('rfBar');
+
+        const etPred = document.getElementById('etPred');
+        const etConf = document.getElementById('etConf');
+        const etBar = document.getElementById('etBar');
+
+        // Character counter
+        textInput.addEventListener('input', () => {
+            charCount.textContent = `${textInput.value.length} chars`;
         });
 
-        // Analyze button click event
-        analyzeButton.addEventListener('click', async () => {
-            const text = textInput.value;
+        // Preset Samples
+        const presets = {
+            positive: "The experimental methodology and evaluation yielded remarkable empirical results with high precision.",
+            negative: "The proposed baseline completely failed to replicate, resulting in unacceptable errors and catastrophic performance degradation.",
+            neutral: "The data preprocessing pipeline commenced at 08:00 UTC and finalized across all twenty experimental nodes.",
+            irrelevant: "The scheduled flight departing from terminal three has been moved to gate thirty-two for operational maintenance."
+        };
+
+        function setSample(type) {
+            if (presets[type]) {
+                textInput.value = presets[type];
+                charCount.textContent = `${textInput.value.length} chars`;
+                runInference();
+            }
+        }
+
+        function clearAll() {
+            textInput.value = '';
+            charCount.textContent = '0 chars';
+            resultsWrapper.classList.add('hidden');
+            errorAlert.classList.add('hidden');
+            latencySpan.classList.add('hidden');
+        }
+
+        // Domain-specific Icons for 4 Classes (No sparkles, strictly scientific)
+        const verdictStyles = {
+            Positive: {
+                svg: `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                bg: 'bg-emerald-950/80 border border-emerald-700/60',
+                color: 'text-emerald-400',
+                barColor: 'bg-emerald-500'
+            },
+            Negative: {
+                svg: `<svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                bg: 'bg-rose-950/80 border border-rose-700/60',
+                color: 'text-rose-400',
+                barColor: 'bg-rose-500'
+            },
+            Neutral: {
+                svg: `<svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4m16 0a8 8 0 11-16 0 8 8 0 0116 0z"></path></svg>`,
+                bg: 'bg-amber-950/80 border border-amber-700/60',
+                color: 'text-amber-400',
+                barColor: 'bg-amber-500'
+            },
+            Irrelevant: {
+                svg: `<svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                bg: 'bg-sky-950/80 border border-sky-700/60',
+                color: 'text-sky-400',
+                barColor: 'bg-sky-500'
+            }
+        };
+
+        // Run Inference
+        async function runInference() {
+            const text = textInput.value.trim();
             if (!text) {
-                showError('Please enter some text to analyze.');
+                showError('Please enter some text in the input box.');
                 return;
             }
 
             setLoading(true);
+            errorAlert.classList.add('hidden');
 
             try {
-                const response = await fetch(predictApi, {
+                const res = await fetch('/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text })
                 });
 
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Inference failed.');
                 }
 
-                const data = await response.json();
+                const data = await res.json();
+                displayResults(data);
 
-                if (data.predicted_sentiment) {
-                    displayResult(data.predicted_sentiment);
-                } else if (data.error) {
-                    showError('Error from server: ' + data.error);
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Could not connect to the analysis server. Is it running?');
+            } catch (e) {
+                showError(e.message || 'Error communicating with inference engine.');
             } finally {
                 setLoading(false);
             }
-        });
+        }
 
-        // Clear button click event
-        clearButton.addEventListener('click', () => {
-            textInput.value = '';
-            resultDiv.classList.add('hidden');
-            errorDiv.classList.add('hidden');
-        });
+        function displayResults(data) {
+            latencySpan.textContent = `${data.latency_ms}ms`;
+            latencySpan.classList.remove('hidden');
 
-        // Function to manage loading state
-        function setLoading(isLoading) {
-            analyzeButton.disabled = isLoading;
-            if (isLoading) {
-                spinner.classList.remove('hidden');
-                buttonText.textContent = 'Analyzing...';
+            // 1. Final Model Verdict
+            const pred = data.predicted_sentiment;
+            const style = verdictStyles[pred] || verdictStyles.Neutral;
+            verdictLabel.textContent = pred;
+            verdictLabel.className = `text-xl font-extrabold tracking-tight ${style.color}`;
+            verdictConfidence.textContent = `${data.confidence.toFixed(1)}%`;
+            verdictIconBox.className = `w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-inner ${style.bg}`;
+            verdictIconBox.innerHTML = style.svg;
+
+            const verdictCard = document.getElementById('verdictCard');
+            if (verdictCard) {
+                if (pred === 'Positive') verdictCard.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                else if (pred === 'Negative') verdictCard.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+                else if (pred === 'Neutral') verdictCard.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                else verdictCard.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+            }
+
+            // Probabilities
+            const p = data.probabilities || {};
+            pPositive.textContent = `${(p.Positive || 0).toFixed(1)}%`;
+            pNegative.textContent = `${(p.Negative || 0).toFixed(1)}%`;
+            pNeutral.textContent = `${(p.Neutral || 0).toFixed(1)}%`;
+            pIrrelevant.textContent = `${(p.Irrelevant || 0).toFixed(1)}%`;
+
+            barPositive.style.width = `${p.Positive || 0}%`;
+            barNegative.style.width = `${p.Negative || 0}%`;
+            barNeutral.style.width = `${p.Neutral || 0}%`;
+            barIrrelevant.style.width = `${p.Irrelevant || 0}%`;
+
+            // 2. Predictive Uncertainty
+            const u = data.uncertainty || {};
+            uncertaintyScoreVal.textContent = `${(u.score || 0).toFixed(1)}%`;
+            uncertaintyProgressBar.style.width = `${u.score || 0}%`;
+
+            const uncertaintyCard = document.getElementById('uncertaintyCard');
+            if (u.color === 'emerald') {
+                uncertaintyProgressBar.className = 'h-full bar-transition rounded-full bg-emerald-500';
+                uncertaintyBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-800';
+                if (uncertaintyCard) uncertaintyCard.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            } else if (u.color === 'amber') {
+                uncertaintyProgressBar.className = 'h-full bar-transition rounded-full bg-amber-500';
+                uncertaintyBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-amber-950/90 text-amber-400 border border-amber-800';
+                if (uncertaintyCard) uncertaintyCard.style.borderColor = 'rgba(245, 158, 11, 0.4)';
             } else {
-                spinner.classList.add('hidden');
-                buttonText.textContent = 'Analyze Sentiment';
+                uncertaintyProgressBar.className = 'h-full bar-transition rounded-full bg-rose-500';
+                uncertaintyBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-rose-950/90 text-rose-400 border border-rose-800';
+                if (uncertaintyCard) uncertaintyCard.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+            }
+
+            uncertaintyBadge.textContent = u.level || 'Calculated';
+            consensusStatus.textContent = u.consensus || 'Evaluated';
+            entropyVal.textContent = `${u.entropy || 0} bits`;
+            interpretationText.textContent = u.interpretation || '';
+
+            // 3. Sub-Model Predictions (Compact cards)
+            const sub = data.ensemble_breakdown || {};
+            if (sub.knn) {
+                knnPred.textContent = sub.knn.prediction;
+                const knnStyle = verdictStyles[sub.knn.prediction] || verdictStyles.Neutral;
+                knnPred.className = `text-xs font-bold ${knnStyle.color}`;
+                knnConf.textContent = `${sub.knn.confidence.toFixed(1)}%`;
+                knnBar.style.width = `${sub.knn.confidence}%`;
+                knnBar.className = `h-full bar-transition rounded-full ${knnStyle.barColor}`;
+            }
+            if (sub.rf) {
+                rfPred.textContent = sub.rf.prediction;
+                const rfStyle = verdictStyles[sub.rf.prediction] || verdictStyles.Neutral;
+                rfPred.className = `text-xs font-bold ${rfStyle.color}`;
+                rfConf.textContent = `${sub.rf.confidence.toFixed(1)}%`;
+                rfBar.style.width = `${sub.rf.confidence}%`;
+                rfBar.className = `h-full bar-transition rounded-full ${rfStyle.barColor}`;
+            }
+            if (sub.et) {
+                etPred.textContent = sub.et.prediction;
+                const etStyle = verdictStyles[sub.et.prediction] || verdictStyles.Neutral;
+                etPred.className = `text-xs font-bold ${etStyle.color}`;
+                etConf.textContent = `${sub.et.confidence.toFixed(1)}%`;
+                etBar.style.width = `${sub.et.confidence}%`;
+                etBar.className = `h-full bar-transition rounded-full ${etStyle.barColor}`;
+            }
+
+            resultsWrapper.classList.remove('hidden');
+        }
+
+        function setLoading(isLoading) {
+            analyzeBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.textContent = 'Quantifying...';
+                btnIcon.innerHTML = `<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>`;
+                btnIcon.classList.add('animate-spin');
+            } else {
+                btnText.textContent = 'Analyze Sentiment';
+                btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+                btnIcon.classList.remove('animate-spin');
             }
         }
 
-        // Function to show error messages
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorDiv.classList.remove('hidden');
-            resultDiv.classList.add('hidden');
-        }
-
-        // Function to display results
-        function displayResult(sentiment) {
-            sentimentText.textContent = sentiment;
-            const sentimentKey = sentiment.toLowerCase();
-            let iconSvg = icons.other; // Default
-            let colorClass = 'text-blue-400';
-
-            if (sentimentKey.includes('positive')) {
-                iconSvg = icons.positive;
-                colorClass = 'text-green-400';
-            } else if (sentimentKey.includes('negative')) {
-                iconSvg = icons.negative;
-                colorClass = 'text-red-400';
-            } else if (sentimentKey.includes('neutral')) {
-                iconSvg = icons.neutral;
-                colorClass = 'text-yellow-400';
-            }
-            
-            sentimentIcon.innerHTML = iconSvg;
-            sentimentText.className = colorClass; // Only set color class
-            
-            resultDiv.classList.remove('hidden');
-            errorDiv.classList.add('hidden');
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorAlert.classList.remove('hidden');
+            resultsWrapper.classList.add('hidden');
         }
     </script>
 </body>

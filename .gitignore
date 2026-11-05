@@ -1,0 +1,22 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Ignore massive unpruned local models (>100MB breaks GitHub push)
+models/soft_voting_ensemble.joblib
+models/soft_voting_ensemble_compressed.joblib
+models/test_pruned_*.joblib
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
