@@ -8,8 +8,6 @@
   </a>
 </p>
 
-🔗 **Live URL:** [https://sentimentanalysis-81an.onrender.com/](https://sentimentanalysis-81an.onrender.com/)
-
 ---
 
 ## Overview
