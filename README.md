@@ -2,11 +2,17 @@
 
 > **Sentiment Analysis & Predictive Uncertainty Quantification Engine**
 
-🌐 **Live Application:** [https://sentimentanalysis-81an.onrender.com/](https://sentimentanalysis-81an.onrender.com/)
+<p align="left">
+  <a href="https://sentimentanalysis-81an.onrender.com/" target="_blank">
+    <img src="https://img.shields.io/badge/Live%20Demo-Open%20Web%20App%20%E2%86%92-10b981?style=for-the-badge&logo=render&logoColor=white" alt="Live Demo" height="34" />
+  </a>
+</p>
+
+🔗 **Live URL:** [https://sentimentanalysis-81an.onrender.com/](https://sentimentanalysis-81an.onrender.com/)
 
 ---
 
-## 📌 Overview
+## Overview
 
 **SentiQuant** is an intelligent Natural Language Processing (NLP) web platform that combines multi-model sentiment classification with **Predictive Uncertainty Quantification**.
 
@@ -14,7 +20,7 @@ Instead of treating classification as a black box, SentiQuant evaluates text acr
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 1. **Feature Extraction**: Input text is processed through a sublinear TF-IDF vectorizer (15,000 features, 1–3 n-grams).
 2. **Soft Voting Tri-Ensemble**: Combines the probabilistic outputs of three parallel estimators:
@@ -28,7 +34,7 @@ Instead of treating classification as a black box, SentiQuant evaluates text acr
 
 ---
 
-## ✨ Features
+## Core Features
 
 - **4-Class Sentiment Analysis**: Categorizes text into `Positive`, `Negative`, `Neutral`, or `Irrelevant`.
 - **Predictive Uncertainty**: Displays dispersion and entropy metrics to highlight ambiguous or edge-case text.
