@@ -2,10 +2,6 @@
 
 > **Sentiment Analysis & Predictive Uncertainty Quantification Engine**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://sentimentanalysis-81an.onrender.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
-
 🌐 **Live Application:** [https://sentimentanalysis-81an.onrender.com/](https://sentimentanalysis-81an.onrender.com/)
 
 ---
@@ -41,15 +37,3 @@ Instead of treating classification as a black box, SentiQuant evaluates text acr
 - **Modern Minimalist UI**: Sleek, distraction-free scientific interface with real-time inference.
 
 ---
-
-## 🚀 Quickstart (Local Run)
-
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Start the application
-python -m uvicorn backend.main:app --reload
-```
-
-Open [http://localhost:8000](http://localhost:8000) in your browser.
